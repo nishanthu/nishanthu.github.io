@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Presentation to Snapwiz</title>
+  <meta charset="utf-8">
+  <meta name="description" content="Presentation to Snapwiz">
+  <meta name="author" content="Nishanth Upadhyaya">
+  <meta name="generator" content="slidify" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/default.css" media="all" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/phone.css" 
+    media="only screen and (max-device-width: 480px)" >
+  <link rel="stylesheet" href="libraries/frameworks/io2012/css/slidify.css" >
+  <link rel="stylesheet" href="libraries/highlighters/highlight.js/css/tomorrow.css" />
+  <base target="_blank"> <!-- This amazingness opens all links in a new tab. -->  <link rel=stylesheet href="./assets/css/ribbons.css"></link>
+
+  
+  <!-- Grab CDN jQuery, fall back to local if offline -->
+  <script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.7.min.js"></script>
+  <script>window.jQuery || document.write('<script src="libraries/widgets/quiz/js/jquery.js"><\/script>')</script> 
+  <script data-main="libraries/frameworks/io2012/js/slides" 
+    src="libraries/frameworks/io2012/js/require-1.0.8.min.js">
+  </script>
+  
+  
+
+</head>
+<body style="opacity: 0">
+  <slides class="layout-widescreen">
+    
+    <!-- LOGO SLIDE -->
+        <slide class="title-slide segue nobackground">
+  <hgroup class="auto-fadein">
+    <h1>Presentation to Snapwiz</h1>
+    <h2></h2>
+    <p>Nishanth Upadhyaya<br/></p>
+  </hgroup>
+  <article></article>  
+</slide>
+    
+
+    <!-- SLIDES -->
+    <slide class="" id="slide-1" style="background:yellow;">
+  <hgroup>
+    <h3>About me</h3>
+  </hgroup>
+  <article data-timings="">
+    <ul>
+<li>Courses at college - Signal Processing, Linear Algebra, Graph Theory</li>
+<li>Coursera courses (completed with certificate) - Machine Learning, Probabilistic Graphical Models, Data Science, Data Analysis in R</li>
+<li>Polyglot - HDL, assembly, C, C++, C#, Matlab, R, Python</li>
+<li>Talk on &#39;Exploratory Data Analysis through Visualization&#39;</li>
+<li>Pre-R&amp;D at Infineon - Software Defined Radio, 2G/3G Physical layer algorithms, SIMD, cache optimization</li>
+<li>K&amp;I at Siemens - High Performance Computing, Invention Disclosures, Monte-Carlo Simulation, time series forecast, visualization, big data</li>
+<li>Misc - 2600+ reps on SO, 2 active Github projects, chess, poker</li>
+</ul>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-2" style="background:;">
+  <hgroup>
+    <h3>Relevant Work Experience</h3>
+  </hgroup>
+  <article data-timings="">
+    <ol>
+<li>Weather modeling &amp; forecast</li>
+<li>Modeling &amp; simulation of turbine reliability</li>
+<li>Mining of large data sets for report generation &amp; visualization</li>
+<li>Invention Disclosure: Quick links for efficient user navigation</li>
+<li>Comparison of PRNGs on multi-core and GPGPU</li>
+</ol>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-3" style="background:;">
+  <hgroup>
+    <h3>Project Overview</h3>
+  </hgroup>
+  <article data-timings="">
+    <p><img src="prj1.jpg" height="70%" width="70%"/></p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-4" style="background:;">
+  <hgroup>
+    <h3>Project Overview - Modeling &amp; Simulation</h3>
+  </hgroup>
+  <article data-timings="">
+    <p><img src="prj2.jpg" height="80%" width="80%"/></p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-5" style="background:;">
+  <hgroup>
+    <h3>About Historical Weather Data</h3>
+  </hgroup>
+  <article data-timings="">
+    <ol>
+<li>2-3 years of hourly data from the Meteorological Department</li>
+<li>Wind speed at 100m, 70m, 10m, Wave-height, Visibility</li>
+<li>Missing time steps </li>
+<li>Invalid readings like -999</li>
+<li>Outliers - extreme values due to device error</li>
+</ol>
+
+<p><img src="rawdata.jpg" height="80%" width="80%"/></p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-6" style="background:;">
+  <hgroup>
+    <h3>Tidying the Data</h3>
+  </hgroup>
+  <article data-timings="">
+    <ol>
+<li>Correlation found between different variables</li>
+<li>Finding outliers - using boxplot using Inter-Quartile Range = 3</li>
+<li>Linear interpolation for missing values, invalid values &amp; outliers</li>
+<li>Check stationarity of the time series - running window of mean &amp; variance</li>
+</ol>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-7" style="background:;">
+  <hgroup>
+    <h3>Modeling Techniques</h3>
+  </hgroup>
+  <article data-timings="">
+    <p>Weather forecast should be stochastic to make error estimates</p>
+
+<ol>
+<li>ARIMA - poor long term prediction, lacks periodicity</li>
+<li>Neural Network - black box, cannot differentiate summer/winter</li>
+<li>Fourier Transform (periodic) + Markov process (stochastic)</li>
+</ol>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-8" style="background:;">
+  <hgroup>
+    <h3>Weather Modeling Overview</h3>
+  </hgroup>
+  <article data-timings="">
+    <p>
+<img src="wm1.jpg" height="70%" width="70%"/>
+</p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-9" style="background:;">
+  <hgroup>
+    <h3>Periodic Component &amp; Stochastic Component</h3>
+  </hgroup>
+  <article data-timings="">
+    <p><img src="wm2.jpg" height="80%" width="80%"/></p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-10" style="background:;">
+  <hgroup>
+    <h3>Relationship with dependent variable</h3>
+  </hgroup>
+  <article data-timings="">
+    <p>Get the multiplicative-factor (slope) for windspeed 10m</p>
+
+<p><img src="wm3.jpg" height="80%" width="80%"/></p>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-11" style="background:;">
+  <hgroup>
+    <h3>Implementation details</h3>
+  </hgroup>
+  <article data-timings="">
+    <ul>
+<li>OOD using Enterprise Architect &amp; implementation in C#</li>
+<li>FFT of large prime number was causing problem</li>
+<li>Truncated the time series to nearest power of 2</li>
+<li>Data parallelism of Markov matrix using parallel for</li>
+</ul>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-12" style="background:;">
+  <hgroup>
+    <h3>Model Validation</h3>
+  </hgroup>
+  <article data-timings="">
+    <p>Generated weather data was compared with historical data</p>
+
+<ol>
+<li>Mean, median, variance</li>
+<li>Min, max, histogram</li>
+<li>Weather window - continuous window of good weather (&lt; threshold)</li>
+</ol>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+<slide class="" id="slide-13" style="background:;">
+  <hgroup>
+    <h3>Tools used for creating presentation</h3>
+  </hgroup>
+  <article data-timings="">
+    <p>R, RStudio, RMarkdown, Slidify. Why?</p>
+
+<ul>
+<li>Cross platform</li>
+<li>Easy to publish</li>
+<li>Easy to embed code and plots</li>
+<li>Interactive slides</li>
+</ul>
+
+  </article>
+  <!-- Presenter Notes -->
+</slide>
+
+    <slide class="backdrop"></slide>
+  </slides>
+  <div class="pagination pagination-small" id='io2012-ptoc' style="display:none;">
+    <ul>
+      <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=1 title='About me'>
+         1
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=2 title='Relevant Work Experience'>
+         2
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=3 title='Project Overview'>
+         3
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=4 title='Project Overview - Modeling &amp; Simulation'>
+         4
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=5 title='About Historical Weather Data'>
+         5
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=6 title='Tidying the Data'>
+         6
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=7 title='Modeling Techniques'>
+         7
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=8 title='Weather Modeling Overview'>
+         8
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=9 title='Periodic Component &amp; Stochastic Component'>
+         9
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=10 title='Relationship with dependent variable'>
+         10
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=11 title='Implementation details'>
+         11
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=12 title='Model Validation'>
+         12
+      </a>
+    </li>
+    <li>
+      <a href="#" target="_self" rel='tooltip' 
+        data-slide=13 title='Tools used for creating presentation'>
+         13
+      </a>
+    </li>
+  </ul>
+  </div>  <!--[if IE]>
+    <script 
+      src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">  
+    </script>
+    <script>CFInstall.check({mode: 'overlay'});</script>
+  <![endif]-->
+</body>
+  <!-- Load Javascripts for Widgets -->
+  
+  <!-- LOAD HIGHLIGHTER JS FILES -->
+  <script src="libraries/highlighters/highlight.js/highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  <!-- DONE LOADING HIGHLIGHTER JS FILES -->
+   
+  </html>
