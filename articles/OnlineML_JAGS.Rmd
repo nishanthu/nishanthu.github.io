@@ -13,7 +13,7 @@ library(rjags)
 library(MASS)
 ```
 
-## Online machine learning and JAGS
+## Introduction
 
 Online machine learning is a branch of machine learning where the training samples arrive sequentially (compared to batch processing). The model parameters are dynamically updated with the arrival new data. More details can be found [here](https://en.wikipedia.org/wiki/Online_machine_learning). Several tools like Vowpal Wabbit, Scikit Learn provide support for online learning. In this article we look at an alternate approach using JAGS.
 
@@ -21,7 +21,7 @@ Online machine learning is a branch of machine learning where the training sampl
 
 ## Simple example
 
-In this article we will look at a simple example of inferring the probability of heads from a sequence of coin tosses. For the purposes of this example, the data will arrive in 2 batches. The model will be sequentially updated. First, the model specification in JAGS. Each coin toss is Bernoulli distributed and the prior on `p` is uniform distribution.
+In this article we will look at a simple example of inferring the probability of heads from a sequence of coin tosses. For the purposes of this example, the data will arrive in 2 batches - `data1` and `data2`. The model will be sequentially updated. First, the model specification in JAGS. Each coin toss is Bernoulli distributed and the prior on `p` is uniform distribution.
 
 
 ```{r}
@@ -43,10 +43,13 @@ data1 <- list(toss = c(0,0,1,1), N = 4, a = a1, b = b1)
 model1 <- jags.model(textConnection(model), data1)
 # sample from the posterior p|toss[1:N]
 out1 <- jags.samples(model1, "p", n.iter = 1000)
-ggplot() + aes(as.vector(out1$p)) + geom_density()
 ```
 
-Since the posterior is indeed a beta from the conjugate prior of Bernoulli. But choosing a parametric family for the posterior is not always appropriate.
+```{r, echo=FALSE}
+ggplot() + aes(as.vector(out1$p)) + geom_density() + xlab("") + ylab("posterior") + ggtitle("Posterior Probability of heads")
+```
+
+The posterior is the conjugate prior of Bernoulli distribution and hence beta distributed. But choosing a parametric family for the posterior is not always appropriate.
 ```{r, message=FALSE, warning=FALSE}
 library(MASS)
 fit <- fitdistr(out1$p, "beta", start = list(shape1=a1, shape2=b1))
@@ -59,6 +62,8 @@ Update the model with new data and repeat the process
 data2 <- list(toss=c(0,1,1,0), N=4, a=a2, b=b2)
 model2 <- jags.model(textConnection(model), data2)
 out2 <- jags.samples(model2, "p", n.iter=1000)
-ggplot() + aes(as.vector(out2$p)) + geom_density()
+```
+```{r, echo=FALSE}
+ggplot() + aes(as.vector(out2$p)) + geom_density() + xlab("") + ylab("posterior") + ggtitle("Posterior Probability of heads")
 ```
 
