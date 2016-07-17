@@ -1,0 +1,169 @@
+---
+title: "Random Number Generation"
+output: 
+  html_document:
+    theme: flatly
+    highlight: monochrome
+---
+
+```{r setup, include=FALSE, message=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(magrittr)
+```
+
+## Introduction
+
+Random number generation is an important tool which finds application in computer science algorithms, statistics, simulation, numerical methods and so on. It is therefore very important to understand different approaches to random number generation and their limitations. In this article we will look at the basic pseudo random number generator, cryptographically secure pseudo random number generator, quasi random number generator and true random number generators. A related topic of parallel/distributed random number generation will also be addressed in this article.
+
+<hr>
+
+## Pseudo Random Number Generator (PRNG)
+
+These are completely deterministic random number generators. they are very fast, have very long periodicity and pass most statistical tests for randomness. They are suitable for most applications with the exception of cryptographics usecases. Once the seed is set, same sequence can be re-generated, which is useful for reproducible research. The built-in random number generation uses Mersenne Twister PRNG by default.
+
+```{r}
+RNGkind()
+set.seed(123)
+sample(10)
+```
+
+<hr>
+
+## Cryptographically Secure Pseudo Random Number Generator (CS-PRNG)
+
+They are used in cryptographic applications where non-predictability is important. Which means observing the random numbers to deduce the state information (and hence the next random number) should be difficult. In **R**, packages like `randaes` and `openssl` support generation of cryptographically secure random numbers.
+
+First using `randaes` package:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(randaes)
+```
+```{r}
+RNGkind("user")
+RNGkind()
+set.seed(42)
+runif(10)
+```
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+detach(package:randaes)
+```
+
+Next using `openssl` package:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(openssl)
+```
+```{r}
+# to produce integers between 0-255
+rand_bytes(10) %>% as.numeric()
+```
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+detach(package:openssl)
+```
+
+<hr>
+
+## Randomized Quasi Random Number Generator
+
+Low Discrepency Sequences or Quasi random numbers have low discrepancy property, which means they _fill_ the Euclidean space uniformly with equidistribution. But they are not random in nature. Applying suitable methods of shuffling can result in equidistribution and randomness. Effectively this results in variance reduction.
+
+First using `randtoolbox` package:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(randtoolbox)
+```
+```{r}
+sobol(10, dim = 1, init=TRUE)
+```
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+detach(package:randtoolbox)
+```
+
+
+Next, using `qrng` package:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(qrng)
+```
+```{r}
+sobol(10, d = 1, randomize = TRUE)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+detach(package:qrng)
+```
+
+<hr>
+
+## True Random Number Generators (TRNG)
+
+TRNGs produce true random numbers. They are usually based on external entropy or noise sources. The website [random.org](www.random.org) uses atmospheris noise to generate random numbers. Another source is the new CPU instruction `rdrand` in Intel microprocessors which uses an on-chip hardware random number generator. 
+First, using random.org website:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(random)
+```
+```{r}
+randomNumbers(3, min=1, max=5, col=1) %>% as.vector()
+```
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+detach(package:random)
+```
+
+Next, using rdrand instruction:
+```{r}
+library(Rrdrand) # loading the library masks the default RNG
+hasRDRAND()
+RNGkind()
+runif(10)
+```
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+detach(package:Rrdrand)
+```
+
+<hr>
+
+## Parallel / Distributed Random Number Generation
+
+For massive simulation and other similar applications, distributed PRNGs are required. The challenge is to minimize inter-stream and intra-stream correlation between different PRNGs running in parallel. This needs special care in the choice of PRNG and seeding. In R packages like `rstream`, `doRNg`, `sitmo`, `harvestr` can be used. External tools like JAGS can also be used, though it is not intended for this purpose. A few examples - 
+
+First, using `doRNG` package:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(doRNG)
+```
+```{r, warning=FALSE}
+set.seed(123)
+foreach(i=1:5) %dorng% {runif(3)} %>% unlist %>% matrix(nrow=5, byrow=TRUE)
+```
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+detach(package:doRNG)
+```
+
+Next, using `harvestr` package:
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(harvestr)
+```
+```{r, warning=FALSE}
+seeds <- gather(2, seed=123)
+farm(seeds, {runif(7)}) %>% unlist %>% matrix(nrow=7, byrow=TRUE)
+```
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+detach(package:harvestr)
+```
+
+Finally using JAGS and its multicore capabilities (set `n.chains = number of cores`):
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(rjags)
+```
+```{r}
+m = "model {
+  x ~ dunif(0,1)
+}"
+
+jgs <- jags.model(file = textConnection(m), n.adapt = 1000, n.chains = 4)
+update(jgs)
+
+out <- jags.samples(jgs, c('x'), 6)
+out$x %>% matrix(nrow=6, byrow=TRUE)
+```
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+detach(package:rjags)
+```
+
+<hr>
