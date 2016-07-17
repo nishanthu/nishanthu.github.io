@@ -1,0 +1,57 @@
+---
+title: "Change Point Analysis"
+output: 
+  html_document:
+    theme: flatly
+    highlight: monochrome
+---
+
+```{r setup, include=FALSE, message=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(changepoint)
+library(rjags)
+library(magrittr)
+```
+
+## Introduction
+
+Change point analysis is a branch of time series analysis. The goal is to identify a point in time index where a statistic (mean, variance etc) of a time series changes. this can be used to identify effect of some external impulse (change in web traffic after website redesign, change in sales after ad etc). This can be accomplished using `changepoint` package or using more powerful tool like **JAGS**.
+
+We will use the below time series data. It consists of sequence of normally distributed data, where the mean changes at time index 13.
+```{r}
+ts.data <- c(rnorm(13, mean=0, sd=0.5), rnorm(20, mean=4, sd=0.5))
+```
+<hr>
+
+## Using `changepoint` package
+
+Run the change-point detection function to detect change in mean. There are other functions in the package to detect change in variance.
+```{r}
+cpt.mean(ts.data, test.stat = "Normal") %>% cpts()
+```
+
+<hr>
+
+## Using **JAGS** tool
+
+The JAGS approach is far more general and powerful. Any distribution can be used in combination with any test statistic. The JAGS outcome gives a fractional value indicating the mean changes between those time indices (as expected). 
+
+```{r}
+model <- "model {
+           for (i in 1:N) {
+             mu0[i] = ifelse(i < cp, mu1, mu2)
+             x[i] ~ dnorm(mu0[i], 1)
+           }  
+           mu1 ~ dunif(0, mu)
+           mu2 ~ dunif(mu, 10*mu)
+           cp ~ dunif(0, N)   
+         }"
+
+dat <- list('x'=ts.data, 'N'=length(ts.data), 'mu'=mean(ts.data))
+jgs <- jags.model(file = textConnection(model), data = dat, n.adapt = 1000)
+update(jgs, 1000)
+out <- jags.samples(jgs, c('cp','mu1','mu2'), 3000, 3)
+out$cp %>% as.vector %>% mean %>% round(1)
+```
+
+<hr>
