@@ -1,0 +1,56 @@
+---
+title: "Clustering using RandomForest"
+output: 
+  html_document:
+    theme: flatly
+    highlight: monochrome
+---
+
+```{r setup, include=FALSE, message=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(randomForest)
+library(ggplot2)
+library(magrittr)
+library(htmlwidgets)
+library(metricsgraphics)
+```
+
+## Introduction
+
+Clustering belongs to unsupervised learning along with other branches like dimensionality reduction. The training samples do not have labels. The input data is then grouped into different classes, assigning each training sample to one group based on some similarity measure (usually Euclidean distance). The classic method of clustering uses an algorithm called `kmeans`
+
+For the purposes of plotting in 2D, the first 2 principal components are used are axes.
+```{r}
+iris.pc <- prcomp(iris[,1:4], center = FALSE, scale. = FALSE)$x %>% as.data.frame()
+```
+<hr>
+
+## Example
+
+First, using the standard `kmeans` algorithm on the data set we get:
+```{r}
+km.cluster <- kmeans(iris[,1:4], centers = 3, iter.max = 20, nstart = 2)
+iris.pc$kmeans.cluster <- km.cluster$cluster
+table(iris$Species, km.cluster$cluster)
+
+mjs_plot(iris.pc, x=PC1, y=PC2) %>%
+  mjs_point(color_accessor=kmeans.cluster) %>%
+  mjs_labs(x="principal comp 1", y="principal comp 2")
+
+```
+
+Next using RandomForest algorithm. The algorithm is run in unsupervised mode by setting the outcome variable `y = NULL`. The algorithm generates proximity matrix. This matrix gives a rough estimate of distance between samples based on the proportion of times the samples end up in same leaf node. The proximity matrix is converted to a `dist` matrix which is then input to the `hclust` algorithm. The hierarchical tree is then cut at number of branches = 3 to obtain the final cluster assignment.
+
+```{r}
+rf.fit <- randomForest(x = iris[,1:4], y = NULL, ntree = 10000, proximity = TRUE, oob.prox = TRUE)
+hclust.rf <- hclust(as.dist(1-rf.fit$proximity), method = "ward.D2")
+rf.cluster = cutree(hclust.rf, k=3)
+iris.pc$rf.clusters <- rf.cluster
+table(rf.cluster, iris$Species)
+
+mjs_plot(iris.pc, x=PC1, y=PC2) %>%
+  mjs_point(color_accessor=rf.clusters) %>%
+  mjs_labs(x="principal comp 1", y="principal comp 2")
+```
+
+<hr>
