@@ -1,0 +1,110 @@
+---
+title: "Bayesian Bootstrap in JAGS"
+output: 
+  html_document:
+    theme: flatly
+    highlight: monochrome
+---
+
+```{r setup, include=FALSE, message=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(boot)
+library(gtools)
+library(htmlwidgets)
+library(metricsgraphics)
+library(magrittr)
+library(bayesboot)
+library(rjags)
+```
+
+
+## Introduction
+
+Classical bootstrap is compared with Bayesian bootstrap. The underlying difference lies in the distribution over individual sample weights. While classical bootstrap uses multinomial distribution, the Bayesian bootstrap uses Dirichlet distribution. Hence the Bayesian bootstrap can be considered as a smooth version of classical bootstrap. Both converge as N grows large. Dirichlet prior is used for probabilities/proportions, more info [here](http://stats.stackexchange.com/questions/44494/why-is-the-dirichlet-distribution-the-prior-for-the-multinomial-distribution/)
+The below shown Bayesian bootstrap has higher dispersion and in case of statistic like `mean`, lower spread is possible by directly using `dirichlet` weights in weighted mean. 
+
+```{r}
+set.seed(42)
+dat <- c(1,4,9,10)
+N <- 1e5
+
+mat1 <- matrix(NA, nrow = N, ncol = length(dat)) # freq
+mat2 <- matrix(NA, nrow = N, ncol = length(dat)) # dirichlet
+mat3 <- numeric(N)
+
+for(i in 1:N) {
+  p.multinomial <- rep(1/length(dat), length(dat)) #default prob of sample function
+  mat1[i,] <- sample(dat, length(dat), replace=TRUE, prob=p.multinomial)
+  
+  p.dirch  <- rdirichlet(1, rep(1, length(dat)))[1,]
+  
+  #higher spread, but more general (applicable to median etc)
+  mat2[i,] <- sample(dat, length(dat), replace=TRUE, prob=p.dirch)
+  
+  #lower dispersion, can be used only with weighted statistic like mean
+  mat3[i] <- weighted.mean(dat, p.dirch)
+}
+```
+<hr>
+
+Using `boot` and `bayesboot` packages:
+```{r}
+mat4 <- boot(dat, function(d,w) {mean(d[w])}, N)$t[,1] # boot
+mat5 <- bayesboot(dat, mean, N)$V1                     # bayesboot
+```
+
+<hr>
+
+## Bayesian bootstrap in JAGS
+
+The model for Bayesian bootstrap in JAGS:
+
+```{r, results='hold'}
+bayesian.bootstrap.model <- 
+  "model {
+      p ~ ddirch(rep(1,N))
+
+      for (j in 1:N) {
+        pick[j] ~ dcat(p[])
+        yboot[j] <- y[pick[j]]
+      }
+
+      y.samples <- yboot[]
+  }"
+
+jgs = jags.model(file = textConnection(bayesian.bootstrap.model), data = list('y'=dat,'N'=length(dat)), n.adapt = 1000)
+
+update(jgs, 1000)
+
+out = jags.samples(jgs, c('y.samples'), 3*N, 3)
+
+mat6 = out$y.samples %>% as.vector %>% matrix(nrow=N, byrow=TRUE)
+
+```
+
+<hr>
+```{r, echo=FALSE}
+mu1 <- mean(rowMeans(mat1));sd1 <- sd(rowMeans(mat1))
+mu2 <- mean(rowMeans(mat2));sd2 <- sd(rowMeans(mat2))
+mu3 <- mean(mat4);sd3 <- sd(mat4)
+mu4 <- mean(mat5);sd4 <- sd(mat5)
+mu5 <- mean(rowMeans(mat6));sd5 <- sd(rowMeans(mat6))
+```
+
+```{r,echo=FALSE}
+mats <- list(rowMeans(mat1), rowMeans(mat2), mat3, mat4, mat5, rowMeans(mat6))
+titles <- c(paste0("Classic bootstrap, mean = ",round(mean(rowMeans(mat1)),2), " sd = ", round(sd(rowMeans(mat1)),2)),
+            paste0("Bayesian bootstrap, mean = ",round(mean(rowMeans(mat2)),2)," sd = ",round(sd(rowMeans(mat2)),2)),
+            paste0("Bayesian bootstrap (weighted), mean = ",round(mean(mat3),2), " sd = ", round(sd(mat3),2)),
+            paste0("boot package, mean = ",round(mean(mat4),2), " sd = ", round(sd(mat4),2)),
+            paste0("bayesboot package, mean = ",round(mean(mat5),2)," sd = ",round(sd(mat5),2)),
+            paste0("Bayesian bootstrap (JAGS), mean = ",round(mean(rowMeans(mat6)),2), " sd = ", round(sd(rowMeans(mat6)),2)))
+lapply(1:6, function(x) {
+  mjs_plot(mats[[x]], width=300, height=300, title=titles[x]) %>%
+    mjs_histogram(bar_margin=2) %>% 
+    mjs_labs(x_label=sprintf("mat%d", x))
+}) -> plots
+
+mjs_grid(plots, nrow=3, ncol=2, widths=c(rep(0.5, 2)))
+```
+
