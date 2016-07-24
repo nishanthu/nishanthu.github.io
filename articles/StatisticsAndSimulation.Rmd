@@ -1,0 +1,84 @@
+---
+title: "Statistical Tests using Simulation"
+output: 
+  html_document:
+    theme: flatly
+    highlight: monochrome
+---
+
+```{r setup, include=FALSE, message=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(magrittr)
+#library(plotrix)
+library(boot)
+set.seed(123)
+```
+
+
+## Introduction
+Theoretical statistical tests involve lot of detailed assumptions, complex formulas and often difficult to interpret. This article uses an alternative approach using simple simulation to arrive at similar results. In most cases, the simulation method makes fewer assumptions about underlying distribution and therefore apply for a larger class of problems.
+
+<hr>
+## One Sample t-test
+Consider a coin toss experiment where a potentially biased coin is tossed 30 times resulting in 22 Heads and 8 Tails. Is it a fair coin? This can be answered using a one-sampe t-test with null hypothesis that the coin is fair (`p = 0.5`). And reject the null hypothesis if p-value < 0.05.
+
+The same result can be obtained by simulating a fair coin 30 times and repeating the experiment a large number of times (say 1000). Then compute the proportion of times we see more than 22 Heads out of 1000 experiments. This gives us `P(data|parameter)`.
+
+In both the approaches we reject the null hypothesis and the conclude the coin is biased.
+
+```{r, results='hold'}
+# create 8 tails, 22 heads and shuffle them
+coin.toss <- c(rep(0, 8), rep(1, 22))[sample(30)] 
+
+OneSample.t.test <- t.test(coin.toss, mu=0.5)
+cat("One sample t-test result = ",round(OneSample.t.test$p.value,4))
+
+sim.OneSample.t.test <- replicate(10000, sample(0:1, 30, replace = TRUE)) %>% colSums
+cat("\nSimulation result = ",mean(sim.OneSample.t.test >= sum(coin.toss)))
+```
+```{r, echo=FALSE}
+ggplot() + aes(sim.OneSample.t.test) + geom_density(adjust=1.2, color='red', fill='red', alpha=0.1) + geom_vline(xintercept=sum(coin.toss)) + ggtitle("Simulation of Coin Toss") + xlab("# of Heads")
+```
+
+
+<hr>
+## Two Sample t-test
+Consider a weights of two groups where the goal is to check if the difference between the two groups is statistically significant. The built-in `t.test` function can perform Welch two sample t-test where the null hypothesis is that the difference in means between the two groups is 0. 
+
+In the simulation approach, the two groups are mixed and suffled to check if the difference is purely random. The experiment is repeated many times.
+
+In both the approaches we fail to reject the null hypothesis and conclude there is no significant difference between two groups. 
+
+```{r, results='hold'}
+group1 <- c(84, 72, 57, 46, 63, 76, 99, 91)
+group2 <- c(81, 69, 74, 61, 56, 87, 69, 65, 66, 44, 62, 69)
+
+TwoSample.t.test <- t.test(group1, group2)
+cat("Two sample t-test result = ",round(TwoSample.t.test$p.value,4))
+
+sim.TwoSample.t.test <- replicate(10000, {
+                          group = c(group1, group2)[sample(length(group1)+length(group2))]; #shuffle
+                          mean(head(group, length(group1))) - mean(tail(group, length(group2)))
+                        })
+cat("\nSimulation result = ",mean(sim.TwoSample.t.test >= (mean(group1) - mean(group2))))
+```
+```{r, echo=FALSE}
+ggplot() + aes(sim.TwoSample.t.test) + geom_density(adjust=1.2, color='green', fill='green', alpha=0.1) + geom_vline(xintercept=mean(group1) - mean(group2)) + ggtitle("Simulation of Group Difference") + xlab("Difference between groups")
+```
+
+<hr>
+## Sampling Distribution of a Statistic
+
+```{r, results='hold'}
+scores <- c(48, 24, 32, 61, 51, 12, 32, 18, 19, 24, 21, 41, 29, 21, 25, 23, 42, 18, 23, 13)
+
+#cat("Std error of mean = ", std.error(scores))
+cat("Std error of mean = ", sd(scores)/sqrt(length(scores)))
+
+boot.samples <- boot(scores, function(x,w) {mean(x[w])}, 1000)$t[,1]
+cat("\nStd error of mean (by simulation) = ", sd(boot.samples))
+```
+```{r, echo=FALSE}
+ggplot() + aes(boot.samples) + geom_density(adjust=1.2, color='blue', fill='blue', alpha=0.1) + ggtitle("Distribution of Sample Mean") + xlab("sample mean")
+```
