@@ -1,0 +1,47 @@
+---
+title: "Linked Charts using MetricsGraphics"
+output: 
+  html_document:
+    theme: flatly
+    highlight: monochrome
+---
+
+```{r setup, include=FALSE, message=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(htmlwidgets)
+library(metricsgraphics)
+library(magrittr)
+```
+
+## Linked Scatter Plot
+
+Using the built-in `mtcars` dataset, each row is considered as an observation and each observation is linked across two different scatter plots (plotting different attributes). Using the `htmlwidgets` package and `metricsgraphics` package and setting the option `linked = TRUE` -
+
+(To see the linkage, hover over one of the plots and see the correspoding observation in the other plot get highlighted)
+
+```{r}
+p1 <- mtcars %>% 
+      mjs_plot(x=wt, y=qsec, linked=TRUE, width=500, height=500, title="mtcars: qsec~wt") %>% 
+      mjs_point() %>% 
+      mjs_labs(x="weight", y="1/4 mile time")
+
+p2 <- mtcars %>% 
+      mjs_plot(x=hp, y=mpg,  linked=TRUE, width=500, height=500, title="mtcars: mpg~hp") %>% 
+      mjs_point() %>% 
+      mjs_labs(x="horse power", y="miles/gallon")
+
+mjs_grid(p1, p2, ncol=2)
+```
+
+<hr>
+
+An alternate solution is to use `iplots` package. It is Java based and not suitable for viewing in browser. But it is very powerful and can link different types of plots.
+
+```{r, echo=FALSE}
+#signals <- data.frame(t=1:50,X=sin(2*pi*(1:50)/15),Y=cos(2*pi*(1:50)/15))
+#p3 <- signals %>% mjs_plot(x=t, y=X, linked=T, width=300, height=300) %>% mjs_line()
+#p4 <- signals %>% mjs_plot(x=t, y=Y, linked=T, width=300, height=300) %>% mjs_line()
+
+#mjs_grid(p3, p4, ncol=2)
+```
+
