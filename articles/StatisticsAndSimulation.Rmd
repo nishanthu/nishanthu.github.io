@@ -54,17 +54,55 @@ In both the approaches we fail to reject the null hypothesis and conclude there 
 group1 <- c(84, 72, 57, 46, 63, 76, 99, 91)
 group2 <- c(81, 69, 74, 61, 56, 87, 69, 65, 66, 44, 62, 69)
 
-TwoSample.t.test <- t.test(group1, group2)
-cat("Two sample t-test result = ",round(TwoSample.t.test$p.value,4))
+TwoSample.t.test <- t.test(group1, group2, alternative = "two.sided")
+cat("Two sample t-test result = ", round(TwoSample.t.test$p.value,4))
 
 sim.TwoSample.t.test <- replicate(10000, {
                           group = c(group1, group2)[sample(length(group1)+length(group2))]; #shuffle
                           mean(head(group, length(group1))) - mean(tail(group, length(group2)))
                         })
-cat("\nSimulation result = ",mean(sim.TwoSample.t.test >= (mean(group1) - mean(group2))))
+
+# x2 for two.sided
+cat("\nSimulation result = ", 2*mean(sim.TwoSample.t.test >= (mean(group1) - mean(group2))))
 ```
 ```{r, echo=FALSE}
 ggplot() + aes(sim.TwoSample.t.test) + geom_density(adjust=1.2, color='green', fill='green', alpha=0.1) + geom_vline(xintercept=mean(group1) - mean(group2)) + ggtitle("Simulation of Group Difference") + xlab("Difference between groups")
+set.seed(123)
+```
+
+<hr>
+## Chi-Squared Tests 
+Chi-squared test computes a test statistic which follows Chi-square distribution. Chi-squared test is used for:
+1. goodness of fit test - is it a fair dice 
+2. independence test - is there difference in voting behavior of males vs females
+
+```{r, results='hold'}
+# Goodness of fit Chi-Squared Test
+# roll a fair, 4 sided dice 100 times 
+dice4 <- sample(1:4, 100, replace = TRUE)
+
+chi.statistic = sum((table(dice4) - 25)^2/25)
+
+# Built-in Chi-Squared Test
+chi.sq.test = chisq.test(table(dice4), p = rep(0.25, 4))
+
+# Simulate the experiment 10000 times
+dice4.sim <- replicate(10000, table(sample(1:4, 100, replace = TRUE))) 
+
+# compute chi statistic for each experiment
+chi.sim <- colSums((dice4.sim-25)^2/25)
+
+cat("Chi-squared test result = ", chi.sq.test$p.value)
+cat("\nSimulation result = ", mean(chi.sim > chi.statistic))
+
+```
+```{r, echo=FALSE}
+ggplot() + 
+  aes(chi.sim) + 
+  geom_density(adjust=1.2, color='brown', fill='brown', alpha=0.1) + 
+  geom_vline(xintercept=chi.statistic) + 
+  ggtitle("Simulation of 4-sided dice") + 
+  xlab("Chi statistic values")
 ```
 
 <hr>
