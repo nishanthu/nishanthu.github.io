@@ -1,0 +1,67 @@
+---
+title: "SQL - Set Operations and Joins"
+output: 
+  html_document:
+    theme: flatly
+    highlight: monochrome
+---
+
+```{r setup, include=FALSE, message=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sqldf)
+library(ggplot2)
+library(magrittr)
+df = data.frame(a=1)
+df = sqldf("select * from df")
+```
+
+
+## Introduction
+Set operations like `union`, `intersect` and `except` are used on 2 tables with same fields. Where as `join` is performed for denormalizing 2 tables into one on a common column. 
+<hr>
+
+## Set Operations
+Consider 2 (similar) tables representing doctors and teachers with first name, last name and age.
+```{r}
+doctors  <- data.frame(first=c('A','B','C'), last=c('W','X','Y'), age=c(20,30,40))
+teachers <- data.frame(first=c('A','B','D'), last=c('W','X','Z'), age=c(20,30,50))
+
+# Union - doctors or teachers
+sqldf("SELECT first, last FROM doctors UNION 
+       SELECT first, last FROM teachers")
+
+# Intersect - doctors and teachers
+sqldf("SELECT first, last FROM doctors INTERSECT 
+       SELECT first, last FROM teachers")
+
+# Except - doctors who are not teachers
+sqldf("SELECT first, last FROM doctors EXCEPT 
+       SELECT first, last FROM teachers")
+```
+<hr>
+
+## Joins
+Consider 2 (very different) tables representing customers and orders. The orders table will store only customer ID and not all the customer information to save space. To find shipping address for an order, orders and customers tables are joined on common customer ID column.
+```{r}
+customers <- data.frame(cust_id=c(1,2,3), name=c('A','B','C'), age=c(20,30,50))
+orders    <- data.frame(order_id=c(1,2,3), cust_id=c(1,2,4), order_qty=c(4,7,8))
+
+# Inner join
+sqldf("SELECT * FROM orders o INNER JOIN customers c ON o.cust_id=c.cust_id")
+
+# Left join
+sqldf("SELECT * FROM orders o LEFT JOIN customers c ON o.cust_id=c.cust_id")
+
+# Right join (simulate, because SQLITE doesn't support)
+sqldf("SELECT * FROM customers c LEFT JOIN orders o ON o.cust_id=c.cust_id")
+
+# Full join (simulate, because SQLITE doesn't support)
+sqldf(
+ "SELECT order_id, order_qty, o.cust_id, name, age FROM orders o LEFT JOIN customers c ON o.cust_id=c.cust_id
+  UNION
+  SELECT order_id, order_qty, c.cust_id, name, age FROM customers c LEFT JOIN orders o ON o.cust_id=c.cust_id"
+)
+```
+
+<hr>
+
