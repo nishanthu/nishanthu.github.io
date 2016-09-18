@@ -1,0 +1,79 @@
+---
+title: "SQL - Simple Statistics"
+output: 
+  html_document:
+    theme: flatly
+    highlight: monochrome
+---
+
+```{r setup, include=FALSE, message=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sqldf)
+library(ggplot2)
+library(magrittr)
+tmp = sqldf("select * from cars")
+```
+
+
+## Introduction
+In this article, we explore some simple statistical functions implementated in SQL, using the `sqldf` package and `mtcars` dataset. 
+<hr>
+
+## Mean, Median, Mode, Variance, Co-variance
+```{r}
+# mean
+sqldf("SELECT AVG(hp) AS mean_horsepower FROM mtcars") %>% print(row.names=F)
+
+# median
+sqldf("SELECT hp As median_horsepower FROM mtcars 
+       ORDER BY hp 
+       LIMIT 1 
+       OFFSET (SELECT COUNT(*)/2 FROM mtcars)") %>% print(row.names=F)
+
+# mode
+sqldf("SELECT hp as mode_horsepower FROM 
+          (SELECT hp, COUNT(hp) AS count_hp FROM mtcars
+           GROUP BY hp
+           ORDER BY count_hp DESC)
+       LIMIT 1") %>% print(row.names=F)
+
+# variance
+sqldf("SELECT SUM((hp-(SELECT AVG(hp) FROM mtcars))*(hp-(SELECT AVG(hp) FROM mtcars)))/
+              (COUNT(hp)-1) AS variance FROM mtcars") %>% print(row.names=F)
+
+# co-variance
+sqldf("SELECT SUM((hp-(SELECT AVG(hp) FROM mtcars))*(wt-(SELECT AVG(wt) FROM mtcars)))/
+              (COUNT(hp)-1) AS covariance FROM mtcars") %>% print(row.names=F)
+```
+<hr>
+## Histogram 0-100, 100-200, 200-300, 300+
+```{r}
+sqldf("SELECT COUNT(CASE WHEN hp >=   0 and hp < 100 THEN 1 END) AS _0_100,
+              COUNT(CASE WHEN hp >= 100 and hp < 200 THEN 1 END) AS _100_200,
+              COUNT(CASE WHEN hp >= 200 and hp < 300 THEN 1 END) AS _200_300,
+              COUNT(CASE WHEN hp >= 300 and hp < 999 THEN 1 END) AS _300_999
+       FROM mtcars
+      ") %>% print(row.names=F)
+```
+<hr>
+## Simple Linear Regression (wt ~ hp)
+```{r, results='hold'}
+slope = sqldf("SELECT 
+                (SELECT SUM((hp-(SELECT AVG(hp) FROM mtcars))*(wt-(SELECT AVG(wt) FROM mtcars)))/(COUNT(hp)-1) 
+                 AS covariance FROM mtcars)/
+                (SELECT SUM((hp-(SELECT AVG(hp) FROM mtcars))*(hp-(SELECT AVG(hp) FROM mtcars)))/(COUNT(hp)-1) 
+                 AS variance FROM mtcars) 
+               AS slope")
+
+#intercept
+intercept = sqldf("SELECT AVG(wt) as intercept FROM mtcars") - slope*sqldf("SELECT AVG(hp) FROM mtcars")
+
+lm.fit <- lm(wt ~ hp, mtcars)
+lm.intercept <- lm.fit$coefficients[[1]]
+lm.slope <- lm.fit$coefficients[[2]]
+```
+```{r, echo=FALSE}
+cat("LM Slope = ", lm.slope,", LM Intercept = ", lm.intercept)
+cat("SQL Slope = ", slope$slope,", SQL Intercept = ", intercept$intercept)
+```
+<hr>
