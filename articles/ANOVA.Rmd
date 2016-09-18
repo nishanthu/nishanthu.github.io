@@ -1,0 +1,150 @@
+---
+title: "ANOVA - R, JAGS, Simulation, Fixed/Random"
+output: 
+  html_document:
+    theme: flatly
+    highlight: monochrome
+---
+
+```{r setup, include=FALSE, message=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rjags)
+library(ggplot2)
+library(magrittr)
+library(lme4)
+set.seed(123)
+```
+
+## Introduction
+
+Anova is used for comparing means of 2 or more groups. It is a generalization of two sample t-test. Assume the data has 5 groups with different means. The goal is to test if the group means are different (at some significance level). 
+Note: ANOVA/F-test can be used to test if model terms are significant (above ex) or test many models against one another (all models fitted on same data). For more information about F-statistic and computation refer this [wiki page](https://en.wikipedia.org/wiki/F-test)
+<hr>
+
+## Regression Model Comparison using ANOVA
+Consider regression models with increasing model complexity. Assuming the models are nested (with increasing addition of variables), we can compare the models using `anova` function. This function compares consecutive models with results showing improvement in squared errors and corresponding p-values. In the below example, `lm1` shows significant improvement over `lm0`. While there is improvement from `lm1` to `lm2`, it is not significant. 
+```{r}
+lm0 <- lm(dist ~ 1, cars)
+lm1 <- lm(dist ~ speed, cars)
+lm2 <- lm(dist ~ speed + I(speed^2), cars)
+
+anova(lm0, lm1, lm2)
+```
+<hr>
+## Multiple Comparison of Group Means
+Consider several groups with constant variance. The goal is to check if group means are same.
+
+```{r}
+ngroups <- 5 # Number of groups / treatments
+nsample <- 10 # Number of observations in each group
+n <- ngroups*nsample # Total number of data points
+
+pop.means <- c(50, 40, 45, 55, 60) # Population means for each of the groups
+normal.error <- rnorm(n, 0, 3) # Residuals, Residual sd=3 (note: assumption of homoscedasticity) 
+
+x <- as.factor(rep(1:5, rep(nsample, ngroups))) # Indicator for group
+y <- rep(pop.means, each=nsample) + normal.error
+```
+```{r, echo=FALSE}
+boxplot(y~x, col="lightgreen", xlab="Groups", ylab="Continuous Response", main="", las = 1)
+```
+<hr>
+
+## ANOVA using base R
+ANOVA can be done using 
+
+```{r}
+anova(lm(y~x))
+```
+<hr>
+
+## ANOVA in JAGS
+```{r, results='hide', message=FALSE}
+m <- "model {
+  # Likelihood
+  for (i in 1:(ngroups*nsample)) {
+    y[i] ~ dnorm(means[x[i]], tau)
+  }
+
+  # Priors
+  for (i in 1:ngroups) {
+    means[i] ~ dnorm(0, 0.001)
+  }
+
+  sigma ~ dunif(0,100)
+  tau <- 1/(sigma*sigma)
+
+  # output variables
+  for (i in 1:(ngroups-1)) {
+    effect[i] <- means[i+1] - means[i]
+  }
+}"
+mean.diff <- list('x'=as.numeric(x),'y'=y,'ngroups'=ngroups,'nsample'=nsample) %>% 
+             jags.model(file = textConnection(m), data = ., n.adapt = 1000) %>% 
+             jags.samples(c('effect'), 100) %>% `$`(effect) %>% 
+             matrix(ncol=4, byrow=T) %>% colMeans %>% round(1)
+```
+```{r, echo=FALSE}
+names(mean.diff) <- c("Group 1 vs 2", "Group 2 vs 3", "Group 3 vs 4", "Group 4 vs 5")
+print(as.data.frame(mean.diff))
+```
+<hr>
+
+## ANOVA by Permutation Test
+The statistic F is defined by:
+$$F = \frac{between-group-variability}{within-group-variability}$$
+For permutation test, the `F` value for original dataset is computed. The dataset is then shuffled and and several `F` values are computed. The proportion of `F` values above the reference is the p-value.
+
+```{r}
+between.group.var <- function(x,y) {sum(nsample*(sapply(1:ngroups, function(i) {mean(y[x==i])}) - mean(y))^2)/(ngroups-1)}
+within.group.var  <- function(x,y) {sum((y-rep(sapply(1:ngroups, function(i) {mean(y[x==i])}),each=nsample))^2)/(n-ngroups)}
+F.Statistic       <- function(x,y) {between.group.var(x,y) / within.group.var(x,y)}
+
+F.orig <- F.Statistic(x,y)
+
+Fs <- replicate(10000, F.Statistic(x, sample(y)))
+
+cat("p-value is ", mean(Fs > F.orig))
+```
+
+<hr>
+## ANOVA for Random Effects
+Random effects: the means for the different groups are correlated and they come from a probability distribution. In contrast to fixed-effects ANOVA, where they are taken to be independent AND fixed / not variable, e.g., the treatments are the entire population, i.e., they exhaust the space of all treatments
+
+Note that the stochastic part of the model consists of TWO stochastic processes:
+
+  - the usual one involving the probability distribution for individual observations (normal.error)
+  - the one involving the probability distribution for the group means (the random effects)
+
+```{r, results='hide', message=FALSE}
+npop <- 10 # Number of groups
+nsample <- 12 # Number of observations in each group
+n <- npop*nsample	# Total number of data points
+
+pop.grand.mean <- 50 # Grand mean
+pop.sd <- 5 # sd of population effects about mean
+pop.means <- rnorm(n=npop, mean=pop.grand.mean, sd=pop.sd)
+normal.error <- rnorm(n, 0, 3);sigma=3 # Draw residuals with residual sd=3
+
+x <- rep(1:npop, rep(nsample, npop))
+X <- as.matrix(model.matrix(~as.factor(x)-1))
+
+y <- as.numeric(X %*% as.matrix(pop.means) + normal.error) # recall that as.numeric is essential
+
+boxplot(y~x, col="lightblue", xlab="Groups", ylab="Continuous Response", main="", las=1)
+abline(h=pop.grand.mean, col="red", lwd=2)
+
+library("lme4")
+pop <- as.factor(x) # Define x as a factor and call it pop
+lme.fit <- lmer(y~1+1|pop) %>% summary()
+```
+```{r, echo=FALSE, results='hold'}
+# Inspect results:
+#print(lme.fit, cor=FALSE)
+cat("lme4 population grand mean = ", lme.fit$coefficients[1])
+cat("\nlme4 pop sd and sigma = \n")
+print(lme.fit$varcor)
+
+#cat(pop.sd, sigma, pop.grand.mean)
+```
+<hr>
